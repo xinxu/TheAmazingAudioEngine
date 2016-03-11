@@ -1707,8 +1707,13 @@ NSTimeInterval AEAudioControllerOutputLatency(__unsafe_unretained AEAudioControl
  */
 AudioTimeStamp AEAudioControllerCurrentAudioTimestamp(__unsafe_unretained AEAudioController *controller);
 
-@end
+/*
+ Choose to enable/disable informative logs. Does not change behavior of error logs.
+ */
+@property (nonatomic, assign) BOOL showLogs;
 
+@end
+  
 #ifdef __cplusplus
 }
 #endif
