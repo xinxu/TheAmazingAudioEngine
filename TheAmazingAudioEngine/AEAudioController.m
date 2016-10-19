@@ -1034,8 +1034,10 @@ static OSStatus ioUnitRenderNotifyCallback(void *inRefCon, AudioUnitRenderAction
 
 -(BOOL)start:(NSError**)error recoveringFromErrors:(BOOL)recoverFromErrors {
     OSStatus status;
-    
-    NSLog(@"TAAE: Starting Engine");
+  
+    if (_showLogs) {
+        NSLog(@"TAAE: Starting Engine");
+    }
     
     if ( !_audioGraph ) {
         if ( error ) *error = _lastError;
@@ -1133,8 +1135,10 @@ static OSStatus ioUnitRenderNotifyCallback(void *inRefCon, AudioUnitRenderAction
 }
 
 - (void)stopInternal {
-    NSLog(@"TAAE: Stopping Engine");
-    
+    if (_showLogs) {
+        NSLog(@"TAAE: Stopping Engine");
+    }
+  
     AECheckOSStatus(AUGraphStop(_audioGraph), "AUGraphStop");
 #if !TARGET_OS_IPHONE
     if ( _inputEnabled ) {
@@ -1936,7 +1940,9 @@ BOOL AECurrentThreadIsAudioThread(void) {
     AVAudioSession *audioSession = [AVAudioSession sharedInstance];
     
     if ( ![audioSession.category isEqualToString:audioSessionCategory] ) {
-        NSLog(@"TAAE: Setting audio session category to %@", audioSessionCategory);
+        if (_showLogs) {
+            NSLog(@"TAAE: Setting audio session category to %@", audioSessionCategory);
+        }
     }
     
     _audioSessionCategory = audioSessionCategory;
@@ -2099,10 +2105,12 @@ BOOL AECurrentThreadIsAudioThread(void) {
     NSTimeInterval grantedBufferSize = audioSession.IOBufferDuration;
 
     if ( _currentBufferDuration != grantedBufferSize ) self.currentBufferDuration = grantedBufferSize;
-    
-    NSLog(@"TAAE: Buffer duration %0.2g, %d frames (requested %0.2gs, %d frames)",
-          grantedBufferSize, (int)round(grantedBufferSize*_audioDescription.mSampleRate),
-          _preferredBufferDuration, (int)round(_preferredBufferDuration*_audioDescription.mSampleRate));
+  
+    if (_showLogs) {
+        NSLog(@"TAAE: Buffer duration %0.2g, %d frames (requested %0.2gs, %d frames)",
+              grantedBufferSize, (int)round(grantedBufferSize*_audioDescription.mSampleRate),
+              _preferredBufferDuration, (int)round(_preferredBufferDuration*_audioDescription.mSampleRate));
+    }
 }
 
 -(NSTimeInterval)inputLatency {
@@ -2373,7 +2381,9 @@ AudioTimeStamp AEAudioControllerCurrentAudioTimestamp(__unsafe_unretained AEAudi
 - (void)interruptionNotification:(NSNotification*)notification {
     dispatch_async(dispatch_get_main_queue(), ^{
         if ( [notification.userInfo[AVAudioSessionInterruptionTypeKey] intValue] == AVAudioSessionInterruptionTypeEnded ) {
-            NSLog(@"TAAE: Audio session interruption ended");
+            if (_showLogs) {
+                NSLog(@"TAAE: Audio session interruption ended");
+            }
             _interrupted = NO;
             
             if ( [[UIApplication sharedApplication] applicationState] != UIApplicationStateBackground || _started ) {
@@ -2391,8 +2401,10 @@ AudioTimeStamp AEAudioControllerCurrentAudioTimestamp(__unsafe_unretained AEAudi
             [[NSNotificationCenter defaultCenter] postNotificationName:AEAudioControllerSessionInterruptionEndedNotification object:self];
         } else if ( [notification.userInfo[AVAudioSessionInterruptionTypeKey] intValue] == AVAudioSessionInterruptionTypeBegan ) {
             if ( _interrupted ) return;
-            
-            NSLog(@"TAAE: Audio session interrupted");
+          
+            if (_showLogs) {
+                NSLog(@"TAAE: Audio session interrupted");
+            }
             _interrupted = YES;
             
             [self stopInternal];
@@ -2401,7 +2413,9 @@ AudioTimeStamp AEAudioControllerCurrentAudioTimestamp(__unsafe_unretained AEAudi
             UInt32 size = sizeof(iaaConnected);
             AudioUnitGetProperty(_ioAudioUnit, kAudioUnitProperty_IsInterAppConnected, kAudioUnitScope_Global, 0, &iaaConnected, &size);
             if ( iaaConnected ) {
-                NSLog(@"TAAE: Audio session interrupted while connected to IAA, restarting");
+                if (_showLogs) {
+                    NSLog(@"TAAE: Audio session interrupted while connected to IAA, restarting");
+                }
                 [self start:NULL];
                 return;
             }
@@ -2417,8 +2431,10 @@ AudioTimeStamp AEAudioControllerCurrentAudioTimestamp(__unsafe_unretained AEAudi
         
         AVAudioSession *audioSession = [AVAudioSession sharedInstance];
         AVAudioSessionRouteDescription *currentRoute = audioSession.currentRoute;
-        NSLog(@"TAAE: Changed audio route to %@", [self stringFromRouteDescription:currentRoute]);
-        
+        if (_showLogs) {
+            NSLog(@"TAAE: Changed audio route to %@", [self stringFromRouteDescription:currentRoute]);
+        }
+      
         BOOL playingThroughSpeaker;
         if ( [currentRoute.outputs filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"portType = %@", AVAudioSessionPortBuiltInSpeaker]].count > 0 ) {
             playingThroughSpeaker = YES;
@@ -2559,9 +2575,13 @@ static void audioUnitStreamFormatChanged(void *inRefCon, AudioUnit inUnit, Audio
     if ( achievedSampleRate != sampleRate ) {
         if ( _useHardwareSampleRate ) {
             _audioDescription.mSampleRate = achievedSampleRate;
-            NSLog(@"TAAE: Using hardware sample rate instead: %g", achievedSampleRate);
+            if (_showLogs) {
+                NSLog(@"TAAE: Using hardware sample rate instead: %g", achievedSampleRate);
+            }
         } else {
-            NSLog(@"TAAE: Hardware sample rate is %g, converting.", achievedSampleRate);
+            if (_showLogs) {
+                NSLog(@"TAAE: Hardware sample rate is %g, converting.", achievedSampleRate);
+            }
         }
     }
 
@@ -2584,8 +2604,10 @@ static void audioUnitStreamFormatChanged(void *inRefCon, AudioUnit inUnit, Audio
     // Determine IO buffer duration
     Float32 bufferDuration = audioSession.IOBufferDuration;
     if ( _currentBufferDuration != bufferDuration ) self.currentBufferDuration = bufferDuration;
-    
-    NSLog(@"TAAE: Audio session initialized (%@) HW samplerate: %g", [extraInfo stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@", "]], achievedSampleRate);
+  
+    if (_showLogs) {
+        NSLog(@"TAAE: Audio session initialized (%@) HW samplerate: %g", [extraInfo stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@", "]], achievedSampleRate);
+    }
 #endif
     
     return YES;
@@ -2694,9 +2716,11 @@ static void audioUnitStreamFormatChanged(void *inRefCon, AudioUnit inUnit, Audio
         _hasSystemError = YES;
         return NO;
     }
-    
-    NSLog(@"TAAE: Engine setup");
-    
+  
+    if (_showLogs) {
+        NSLog(@"TAAE: Engine setup");
+    }
+  
     return YES;
 }
 
@@ -3009,13 +3033,15 @@ static void audioUnitStreamFormatChanged(void *inRefCon, AudioUnit inUnit, Audio
         return NO;
     
     if ( io_desc.componentSubType != target_io_desc.componentSubType ) {
-        
-        if ( useVoiceProcessing ) {
-            NSLog(@"TAAE: Restarting audio system to use VPIO");
-        } else {
-            NSLog(@"TAAE: Restarting audio system to use normal input unit");
+      
+        if (_showLogs) {
+            if ( useVoiceProcessing ) {
+                NSLog(@"TAAE: Restarting audio system to use VPIO");
+            } else {
+                NSLog(@"TAAE: Restarting audio system to use normal input unit");
+            }
         }
-        
+      
         return YES;
     }
     
@@ -3039,7 +3065,9 @@ static void audioUnitStreamFormatChanged(void *inRefCon, AudioUnit inUnit, Audio
         BOOL result = AECheckOSStatus(AudioUnitGetProperty(unit, kAudioUnitProperty_StreamFormat, _outputEnabled ? kAudioUnitScope_Output : kAudioUnitScope_Input, element, &asbd, &size), "AudioUnitGetProperty(kAudioUnitProperty_StreamFormat)");
         if ( result && asbd.mSampleRate != _audioDescription.mSampleRate ) {
             NSError *error = nil;
-            NSLog(@"TAAE: Changing sample rate to %g", asbd.mSampleRate);
+            if (_showLogs) {
+                NSLog(@"TAAE: Changing sample rate to %g", asbd.mSampleRate);
+            }
             if ( ![self reinitializeWithChanges:^{
                 [self willChangeValueForKey:@"audioDescription"];
                 _audioDescription.mSampleRate = asbd.mSampleRate;
@@ -3400,15 +3428,17 @@ static void audioUnitStreamFormatChanged(void *inRefCon, AudioUnit inUnit, Audio
     #endif
     
     if ( inputDescriptionChanged ) {
-        if ( numberOfInputChannels > 0 ) {
-            NSLog(@"TAAE: Input status updated (%u channel, %@%@%@%@)",
-                  (unsigned int)numberOfInputChannels,
-                  usingAudiobusReceiverPort ? @"using Audiobus, " : @"",
-                  rawAudioDescription.mFormatFlags & kAudioFormatFlagIsNonInterleaved ? @"non-interleaved" : @"interleaved",
-                  [self usingVPIO] ? @", using voice processing" : @"",
-                  _inputTable->entries[0].audioConverter ? @", with converter" : @"");
-        } else {
-            NSLog(@"TAAE: Input status updated: No input available");
+        if (_showLogs) {
+            if ( numberOfInputChannels > 0 ) {
+                NSLog(@"TAAE: Input status updated (%u channel, %@%@%@%@)",
+                      (unsigned int)numberOfInputChannels,
+                      usingAudiobusReceiverPort ? @"using Audiobus, " : @"",
+                      rawAudioDescription.mFormatFlags & kAudioFormatFlagIsNonInterleaved ? @"non-interleaved" : @"interleaved",
+                      [self usingVPIO] ? @", using voice processing" : @"",
+                      _inputTable->entries[0].audioConverter ? @", with converter" : @"");
+            } else {
+                NSLog(@"TAAE: Input status updated: No input available");
+            }
         }
     }
 }

@@ -1368,6 +1368,11 @@ BOOL AECurrentThreadIsAudioThread(void);
 #pragma mark - Properties
 
 /*!
+ Choose to enable/disable informative logs. Does not change behavior of error logs.
+ */
+@property (nonatomic, assign) BOOL showLogs;
+
+/*!
  * Audio session category to use
  *
  *  See discussion in the [Audio Session Programming Guide](http://developer.apple.com/library/ios/#documentation/Audio/Conceptual/AudioSessionProgrammingGuide/AudioSessionCategories/AudioSessionCategories.html)
