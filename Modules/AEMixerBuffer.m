@@ -137,6 +137,10 @@ static void prepareSkipFadeBufferForSource(AEMixerBuffer *THIS, source_t* source
     return self;
 }
 
+- (AudioUnit)getMixerUnit {
+    return _mixerUnit;
+}
+
 - (void)dealloc {
     pthread_mutex_destroy(&_graphMutex);
     

@@ -94,6 +94,8 @@ typedef UInt32 (*AEMixerBufferSourcePeekCallback) (AEMixerBufferSource  source,
  */
 @interface AEMixerBuffer : NSObject
 
+- (AudioUnit)getMixerUnit;
+
 /*!
  * Initialiser
  *
